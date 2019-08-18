@@ -32,14 +32,14 @@ final class SingleMethodAssignedNodePropertyTypeInferer extends AbstractTypeInfe
         $types = [];
         $constructorClassMethod = $class->getMethod('__construct');
         if ($constructorClassMethod !== null) {
-            $constructorTypes = $this->resolvePorpertyTypeFromClassMethod($constructorClassMethod, $propertyName);
+            $constructorTypes = $this->resolvePopertyTypeFromClassMethod($constructorClassMethod, $propertyName);
             $types = array_merge($types, $constructorTypes);
         }
 
         // PHPUnit setup
         $phpUnitClassMethod = $class->getMethod('setUp');
         if ($phpUnitClassMethod !== null) {
-            $phpUnitTypes = $this->resolvePorpertyTypeFromClassMethod($phpUnitClassMethod, $propertyName);
+            $phpUnitTypes = $this->resolvePopertyTypeFromClassMethod($phpUnitClassMethod, $propertyName);
             $types = array_merge($types, $phpUnitTypes);
         }
 
@@ -74,7 +74,10 @@ final class SingleMethodAssignedNodePropertyTypeInferer extends AbstractTypeInfe
         return $assignedNode;
     }
 
-    private function resolvePorpertyTypeFromClassMethod(ClassMethod $classMethod, string $propertyName): array
+    /**
+     * @return string[]
+     */
+    private function resolvePopertyTypeFromClassMethod(ClassMethod $classMethod, string $propertyName): array
     {
         $assignedNode = $this->resolveAssignedNodeToProperty($classMethod, $propertyName);
         if ($assignedNode === null) {

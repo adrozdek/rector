@@ -272,33 +272,4 @@ CODE_SAMPLE
 
         return false;
     }
-
-    /**
-     * @param string[] $propertyNames
-     */
-    private function isNextNodeCountingProperty(BinaryOp $binaryOp, array $propertyNames): bool
-    {
-        return (bool) $this->betterNodeFinder->findFirst($binaryOp->right, function (Node $node) use (
-            $propertyNames
-        ): ?bool {
-            if (! $node instanceof Expr\FuncCall) {
-                return null;
-            }
-
-            if (! $this->isName($node, 'count')) {
-                return null;
-            }
-
-            if (! isset($node->args[0])) {
-                return null;
-            }
-
-            $countedArgument = $node->args[0]->value;
-            if (! $countedArgument instanceof PropertyFetch && ! $countedArgument instanceof Expr\StaticPropertyFetch) {
-                return null;
-            }
-
-            return $this->isNames($countedArgument, $propertyNames);
-        });
-    }
 }

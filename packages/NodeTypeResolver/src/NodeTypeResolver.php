@@ -15,6 +15,7 @@ use PhpParser\Node\Expr\MethodCall;
 use PhpParser\Node\Expr\New_;
 use PhpParser\Node\Expr\PropertyFetch;
 use PhpParser\Node\Expr\StaticCall;
+use PhpParser\Node\Expr\StaticPropertyFetch;
 use PhpParser\Node\Expr\Variable;
 use PhpParser\Node\Param;
 use PhpParser\Node\Scalar\String_;
@@ -277,7 +278,7 @@ final class NodeTypeResolver
             return true;
         }
 
-        if ($node instanceof PropertyFetch || $node instanceof Expr\StaticPropertyFetch) {
+        if ($node instanceof PropertyFetch || $node instanceof StaticPropertyFetch) {
             // PHPStan false positive, when variable has type[] docblock, but default array is missing
             if ($this->isPropertyFetchWithArrayDefault($node) === false) {
                 return false;
@@ -545,7 +546,7 @@ final class NodeTypeResolver
      */
     private function isPropertyFetchWithArrayDefault(Node $node): bool
     {
-        if (! $node instanceof PropertyFetch && ! $node instanceof Expr\StaticPropertyFetch) {
+        if (! $node instanceof PropertyFetch && ! $node instanceof StaticPropertyFetch) {
             return false;
         }
 

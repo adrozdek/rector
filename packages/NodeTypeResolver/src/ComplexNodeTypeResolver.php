@@ -5,6 +5,7 @@ namespace Rector\NodeTypeResolver;
 use PhpParser\Node;
 use PhpParser\Node\Expr\Assign;
 use PhpParser\Node\Expr\PropertyFetch;
+use PhpParser\Node\Expr\StaticPropertyFetch;
 use PhpParser\Node\Stmt\Class_;
 use PhpParser\Node\Stmt\Property;
 use Rector\Exception\ShouldNotHappenException;
@@ -82,7 +83,7 @@ final class ComplexNodeTypeResolver
         $propertyAssignNodes = $this->betterNodeFinder->find([$classNode], function (Node $node) use (
             $propertyName
         ): bool {
-            if ($node instanceof Assign && ($node->var instanceof PropertyFetch || $node->var instanceof Node\Expr\StaticPropertyFetch)) {
+            if ($node instanceof Assign && ($node->var instanceof PropertyFetch || $node->var instanceof StaticPropertyFetch)) {
                 // is property match
                 return $this->nameResolver->isName($node->var, $propertyName);
             }

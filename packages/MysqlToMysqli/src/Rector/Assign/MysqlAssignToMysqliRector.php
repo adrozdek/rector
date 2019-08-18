@@ -9,6 +9,7 @@ use PhpParser\Node\Expr\BinaryOp\Smaller;
 use PhpParser\Node\Expr\FuncCall;
 use PhpParser\Node\Expr\PostInc;
 use PhpParser\Node\Expr\PropertyFetch;
+use PhpParser\Node\Expr\StaticPropertyFetch;
 use PhpParser\Node\Expr\Variable;
 use PhpParser\Node\Name;
 use PhpParser\Node\Scalar\LNumber;
@@ -166,12 +167,7 @@ CODE_SAMPLE
         foreach ($this->fieldToFieldDirect as $funcName => $property) {
             if ($this->isName($funcCall, $funcName)) {
                 $parentNode = $funcCall->getAttribute(AttributeKey::PARENT_NODE);
-<<<<<<< HEAD
-                if ($parentNode instanceof PropertyFetch) {
-=======
-
-                if ($parentNode instanceof PropertyFetch || $parentNode instanceof Node\Expr\StaticPropertyFetch) {
->>>>>>> [TypeDeclaration] Add FixVarDocTypePropertyRector
+                if ($parentNode instanceof PropertyFetch || $parentNode instanceof StaticPropertyFetch) {
                     continue;
                 }
 

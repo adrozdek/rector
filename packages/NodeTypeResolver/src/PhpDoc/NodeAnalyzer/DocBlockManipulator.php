@@ -827,4 +827,31 @@ final class DocBlockManipulator
 
         return $isShortClassUsed;
     }
+
+    /**
+     * @param string|string[]|IdentifierValueObject|IdentifierValueObject[] $type
+     */
+    private function isCurrentTypeAlreadyAdded($type, Node $node): bool
+    {
+        $varTypeInfo = $this->getVarTypeInfo($node);
+        if ($varTypeInfo === null) {
+            return false;
+        }
+
+        if (is_array($type)) {
+            $type = array_values($type);
+
+            if (count($type) === 1) {
+                if (count($varTypeInfo->getFqnTypes()) === 1 && is_string($type[0])) {
+                    return ltrim($type[0], '\\') === $varTypeInfo->getFqnTypes()[0];
+                }
+            }
+
+            if (array_diff($type, $varTypeInfo->getFqnTypes()) === []) {
+                return true;
+            }
+        }
+
+        return false;
+    }
 }

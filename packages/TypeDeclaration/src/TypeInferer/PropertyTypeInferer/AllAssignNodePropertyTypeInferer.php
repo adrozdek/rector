@@ -114,7 +114,7 @@ final class AllAssignNodePropertyTypeInferer extends AbstractTypeInferer impleme
             return false;
         }
 
-        return $this->nameResolver->isNameInsensitive($expr, 'null');
+        return $this->nameResolver->isName($expr, 'null');
     }
 
     private function isNullableType(Property $property): bool
