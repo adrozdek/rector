@@ -11,7 +11,6 @@ use PhpParser\Node\Stmt\ClassLike;
 use PHPStan\Type\ArrayType;
 use PHPStan\Type\ErrorType;
 use PHPStan\Type\MixedType;
-use PHPStan\Type\NullType;
 use PHPStan\Type\Type;
 use Rector\PhpParser\Node\Manipulator\AssignManipulator;
 
@@ -64,9 +63,6 @@ final class AssignToPropertyTypeInferer extends AbstractTypeInferer
 
             return null;
         });
-
-        // nullable?
-//        $assignedExprStaticTypes[] = new NullType();
 
         return $this->filterOutDuplicatedTypes($assignedExprStaticTypes);
     }
