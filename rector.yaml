@@ -1,11 +1,5 @@
 parameters:
     exclude_paths:
-        - "/Fixture/"
-        - "/Fixtures/"
-        - "/Expected/"
-        - "/Source/"
-        - "/tests/" # for better performance of local changes
-
         # autoload-buggy cases
         - "*.php.inc"
 
@@ -13,4 +7,4 @@ parameters:
     php_version_features: '7.1'
 
 services:
-    Rector\CodingStyle\Rector\Namespace_\ImportFullyQualifiedNamesRector: ~
+    Rector\TypeDeclaration\Rector\Property\FixVarDocTypePropertyRector: ~

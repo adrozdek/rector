@@ -259,6 +259,7 @@ CODE_SAMPLE
             return null;
         }
 
+        /** @var string $name */
         $this->alreadyProcessedClasses[] = $name;
 
         $newName = $this->oldToNewClasses[$name];

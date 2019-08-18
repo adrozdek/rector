@@ -4,8 +4,6 @@ namespace Rector\TypeDeclaration\TypeInferer\PropertyTypeInferer;
 
 use Nette\Utils\Strings;
 use PhpParser\Node;
-use PhpParser\Node\Expr\Assign;
-use PhpParser\Node\Expr\Variable;
 use PhpParser\Node\Name;
 use PhpParser\Node\Name\FullyQualified;
 use PhpParser\Node\NullableType;
@@ -17,6 +15,7 @@ use PhpParser\NodeTraverser;
 use PHPStan\Type\NullType;
 use PHPStan\Type\Type;
 use Rector\NodeTypeResolver\Node\AttributeKey;
+use Rector\PhpParser\Node\Manipulator\PropertyFetchManipulator;
 use Rector\TypeDeclaration\Contract\TypeInferer\PropertyTypeInfererInterface;
 use Rector\TypeDeclaration\TypeInferer\AbstractTypeInferer;
 use Rector\TypeDeclaration\ValueObject\IdentifierValueObject;
@@ -24,12 +23,25 @@ use Rector\TypeDeclaration\ValueObject\IdentifierValueObject;
 final class ConstructorPropertyTypeInferer extends AbstractTypeInferer implements PropertyTypeInfererInterface
 {
     /**
+     * @var PropertyFetchManipulator
+     */
+    private $propertyFetchManipulator;
+
+    public function __construct(PropertyFetchManipulator $propertyFetchManipulator)
+    {
+        $this->propertyFetchManipulator = $propertyFetchManipulator;
+    }
+
+    /**
      * @return string[]|IdentifierValueObject[]
      */
     public function inferProperty(Property $property): array
     {
-        /** @var Class_ $class */
+        /** @var Class_|null $class */
         $class = $property->getAttribute(AttributeKey::CLASS_NODE);
+        if ($class === null) {
+            return [];
+        }
 
         $classMethod = $class->getMethod('__construct');
         if ($classMethod === null) {
@@ -74,44 +86,17 @@ final class ConstructorPropertyTypeInferer extends AbstractTypeInferer implement
         return 800;
     }
 
-    private function getResolveParamStaticTypeAsString(ClassMethod $classMethod, string $propertyName): ?string
+    private function resolveParamStaticType(ClassMethod $classMethod, string $propertyName): ?Type
     {
-        $paramStaticType = $this->resolveParamStaticType($classMethod, $propertyName);
-        if ($paramStaticType === null) {
+        $firstAssignedVariable = $this->propertyFetchManipulator->getFirstVariableAssignedToPropertyOfName(
+            $classMethod,
+            $propertyName
+        );
+        if ($firstAssignedVariable === null) {
             return null;
         }
 
-        $typesAsStrings = $this->staticTypeToStringResolver->resolveObjectType($paramStaticType);
-
-        foreach ($typesAsStrings as $i => $typesAsString) {
-            $typesAsStrings[$i] = $this->removePreSlash($typesAsString);
-        }
-
-        return implode('|', $typesAsStrings);
-    }
-
-    private function resolveParamStaticType(ClassMethod $classMethod, string $propertyName): ?Type
-    {
-        $paramStaticType = null;
-
-        $this->callableNodeTraverser->traverseNodesWithCallable((array) $classMethod->stmts, function (Node $node) use (
-            $propertyName,
-            &$paramStaticType
-        ): ?int {
-            if (! $node instanceof Variable) {
-                return null;
-            }
-
-            if (! $this->nameResolver->isName($node, $propertyName)) {
-                return null;
-            }
-
-            $paramStaticType = $this->nodeTypeResolver->getNodeStaticType($node);
-
-            return NodeTraverser::STOP_TRAVERSAL;
-        });
-
-        return $paramStaticType;
+        return $this->nodeTypeResolver->getNodeStaticType($firstAssignedVariable);
     }
 
     /**
@@ -221,6 +206,22 @@ final class ConstructorPropertyTypeInferer extends AbstractTypeInferer implement
             return explode('|', $paramStaticTypeAsString);
         }
 
-        return ['array'];
+        return ['mixed[]'];
+    }
+
+    private function getResolveParamStaticTypeAsString(ClassMethod $classMethod, string $propertyName): ?string
+    {
+        $paramStaticType = $this->resolveParamStaticType($classMethod, $propertyName);
+        if ($paramStaticType === null) {
+            return null;
+        }
+
+        $typesAsStrings = $this->staticTypeToStringResolver->resolveObjectType($paramStaticType);
+
+        foreach ($typesAsStrings as $i => $typesAsString) {
+            $typesAsStrings[$i] = $this->removePreSlash($typesAsString);
+        }
+
+        return implode('|', $typesAsStrings);
     }
 }

@@ -285,6 +285,10 @@ final class DocBlockManipulator
      */
     public function changeVarTag(Node $node, $type): void
     {
+        if ($this->isCurrentTypeAlreadyAdded($type, $node)) {
+            return;
+        }
+
         $this->removeTagFromNode($node, 'var', true);
         $this->addTypeSpecificTag($node, 'var', $type);
     }
@@ -675,7 +679,6 @@ final class DocBlockManipulator
     private function resolveNodeType(TypeNode $typeNode): string
     {
         $nodeType = $typeNode->getAttribute(Attribute::RESOLVED_NAME);
-
         if ($nodeType === null) {
             $nodeType = $typeNode->getAttribute(Attribute::TYPE_AS_STRING);
         }

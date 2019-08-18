@@ -166,7 +166,12 @@ CODE_SAMPLE
         foreach ($this->fieldToFieldDirect as $funcName => $property) {
             if ($this->isName($funcCall, $funcName)) {
                 $parentNode = $funcCall->getAttribute(AttributeKey::PARENT_NODE);
+<<<<<<< HEAD
                 if ($parentNode instanceof PropertyFetch) {
+=======
+
+                if ($parentNode instanceof PropertyFetch || $parentNode instanceof Node\Expr\StaticPropertyFetch) {
+>>>>>>> [TypeDeclaration] Add FixVarDocTypePropertyRector
                     continue;
                 }
 

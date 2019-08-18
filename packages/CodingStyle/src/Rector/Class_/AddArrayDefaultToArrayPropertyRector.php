@@ -15,6 +15,7 @@ use PhpParser\Node\Stmt\Property;
 use PhpParser\Node\Stmt\PropertyProperty;
 use Rector\NodeTypeResolver\Node\AttributeKey;
 use Rector\NodeTypeResolver\PhpDoc\NodeAnalyzer\DocBlockManipulator;
+use Rector\PhpParser\Node\Manipulator\PropertyFetchManipulator;
 use Rector\Rector\AbstractRector;
 use Rector\RectorDefinition\CodeSample;
 use Rector\RectorDefinition\RectorDefinition;
@@ -32,9 +33,17 @@ final class AddArrayDefaultToArrayPropertyRector extends AbstractRector
      */
     private $docBlockManipulator;
 
-    public function __construct(DocBlockManipulator $docBlockManipulator)
-    {
+    /**
+     * @var PropertyFetchManipulator
+     */
+    private $propertyFetchManipulator;
+
+    public function __construct(
+        DocBlockManipulator $docBlockManipulator,
+        PropertyFetchManipulator $propertyFetchManipulator
+    ) {
         $this->docBlockManipulator = $docBlockManipulator;
+        $this->propertyFetchManipulator = $propertyFetchManipulator;
     }
 
     public function getDefinition(): RectorDefinition
@@ -98,22 +107,6 @@ CODE_SAMPLE
         $this->replaceNullComparisonOfArrayPropertiesWithArrayComparison($node, $changedProperties);
 
         return $node;
-    }
-
-    /**
-     * @param string[] $changedProperties
-     */
-    private function isLocalPropertyFetchOfNames(Expr $expr, array $changedProperties): bool
-    {
-        if (! $expr instanceof PropertyFetch) {
-            return false;
-        }
-
-        if (! $this->isName($expr->var, 'this')) {
-            return false;
-        }
-
-        return $this->isNames($expr->name, $changedProperties);
     }
 
     /**
@@ -194,11 +187,15 @@ CODE_SAMPLE
                 return null;
             }
 
-            if ($this->isLocalPropertyFetchOfNames($node->left, $propertyNames) && $this->isNull($node->right)) {
+            if ($this->propertyFetchManipulator->isLocalPropertyOfNames($node->left, $propertyNames) && $this->isNull(
+                $node->right
+            )) {
                 $node->right = new Array_();
             }
 
-            if ($this->isLocalPropertyFetchOfNames($node->right, $propertyNames) && $this->isNull($node->left)) {
+            if ($this->propertyFetchManipulator->isLocalPropertyOfNames($node->right, $propertyNames) && $this->isNull(
+                $node->left
+            )) {
                 $node->left = new Array_();
             }
 
@@ -211,7 +208,7 @@ CODE_SAMPLE
      */
     private function clearNotNullBeforeCount(Class_ $class, array $propertyNames): void
     {
-        $this->traverseNodesWithCallable($class, function (Node $node) use ($propertyNames) {
+        $this->traverseNodesWithCallable($class, function (Node $node) use ($propertyNames): ?Expr {
             if (! $node instanceof BooleanAnd) {
                 return null;
             }
@@ -261,14 +258,47 @@ CODE_SAMPLE
             return false;
         }
 
-        if ($this->isLocalPropertyFetchOfNames($expr->left, $propertyNames) && $this->isNull($expr->right)) {
+        if ($this->propertyFetchManipulator->isLocalPropertyOfNames($expr->left, $propertyNames) && $this->isNull(
+            $expr->right
+        )) {
             return true;
         }
 
-        if ($this->isLocalPropertyFetchOfNames($expr->right, $propertyNames) && $this->isNull($expr->left)) {
+        if ($this->propertyFetchManipulator->isLocalPropertyOfNames($expr->right, $propertyNames) && $this->isNull(
+            $expr->left
+        )) {
             return true;
         }
 
         return false;
+    }
+
+    /**
+     * @param string[] $propertyNames
+     */
+    private function isNextNodeCountingProperty(BinaryOp $binaryOp, array $propertyNames): bool
+    {
+        return (bool) $this->betterNodeFinder->findFirst($binaryOp->right, function (Node $node) use (
+            $propertyNames
+        ): ?bool {
+            if (! $node instanceof Expr\FuncCall) {
+                return null;
+            }
+
+            if (! $this->isName($node, 'count')) {
+                return null;
+            }
+
+            if (! isset($node->args[0])) {
+                return null;
+            }
+
+            $countedArgument = $node->args[0]->value;
+            if (! $countedArgument instanceof PropertyFetch && ! $countedArgument instanceof Expr\StaticPropertyFetch) {
+                return null;
+            }
+
+            return $this->isNames($countedArgument, $propertyNames);
+        });
     }
 }
