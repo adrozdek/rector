@@ -3,9 +3,9 @@
 namespace Rector\Architecture\Rector\Class_;
 
 use Nette\Utils\Strings;
+use PhpParser\Comment\Doc;
 use PhpParser\Node;
 use PhpParser\Node\Stmt\Class_;
-use PHPStan\PhpDocParser\Ast\PhpDoc\GenericTagValueNode;
 use Rector\Architecture\Tests\Rector\Class_\RemoveRepositoryFromEntityAnnotationRector\RemoveRepositoryFromEntityAnnotationRectorTest;
 use Rector\NodeTypeResolver\PhpDoc\NodeAnalyzer\DocBlockManipulator;
 use Rector\Rector\AbstractRector;
@@ -83,20 +83,10 @@ CODE_SAMPLE
             return null;
         }
 
-        $entityTags = $phpDocInfo->getTagsByName(self::DOCTRINE_ORM_MAPPING_ENTITY);
-        if ($entityTags === []) {
-            return null;
-        }
+        $docCommentText = $node->getDocComment()->getText();
+        $newDocCommentText = Strings::replace($docCommentText, '#\(repositoryClass="(.*?)"\)#');
 
-        $entityTag = $entityTags[0];
-        if (! $entityTag->value instanceof GenericTagValueNode) {
-            return null;
-        }
-
-        $entityTag->value->value = Strings::replace($entityTag->value->value, '#\(repositoryClass="(.*?)"\)#');
-
-        // save the entity tag
-        $this->docBlockManipulator->updateNodeWithPhpDocInfo($node, $phpDocInfo);
+        $node->setDocComment(new Doc($newDocCommentText));
 
         return $node;
     }
