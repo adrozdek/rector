@@ -6,6 +6,7 @@ namespace Rector\TypeDeclaration\Rector\Property;
 
 use PhpParser\Node;
 use PhpParser\Node\Stmt\Property;
+use PHPStan\Type\MixedType;
 use Rector\NodeTypeResolver\PhpDoc\NodeAnalyzer\DocBlockManipulator;
 use Rector\Rector\AbstractRector;
 use Rector\RectorDefinition\RectorDefinition;
@@ -59,9 +60,10 @@ final class PropertyTypeDeclarationRector extends AbstractRector
             return null;
         }
 
-        $types = $this->propertyTypeInferer->inferProperty($node);
-        if ($types) {
-            $this->docBlockManipulator->changeVarTag($node, $types);
+        $type = $this->propertyTypeInferer->inferProperty($node);
+
+        if (! $type instanceof MixedType) {
+            $this->docBlockManipulator->changeVarTag($node, $type);
             return $node;
         }
 

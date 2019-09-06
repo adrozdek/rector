@@ -16,6 +16,8 @@ final class TypeFactory
      */
     public function createMixedPassedOrUnionType(array $types): Type
     {
+        $types = $this->unwrapUnionedTypes($types);
+
         if (count($types) === 0) {
             return new MixedType();
         }
@@ -43,5 +45,22 @@ final class TypeFactory
         }
 
         throw new ShouldNotHappenException();
+    }
+
+    private function unwrapUnionedTypes(array $types): array
+    {
+        // unwrap union types
+        $unwrappedTypes = [];
+        foreach ($types as $key => $type) {
+            if ($type instanceof UnionType) {
+                foreach ($type->getTypes() as $subUnionedType) {
+                    $unwrappedTypes[] = $subUnionedType;
+                }
+
+                unset($types[$key]);
+            }
+        }
+
+        return array_merge($types, $unwrappedTypes);
     }
 }

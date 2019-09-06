@@ -171,7 +171,7 @@ final class ConstructorPropertyTypeInferer extends AbstractTypeInferer implement
             $types[] = new NullType();
             $types[] = $this->staticTypeMapper->mapPhpParserNodePHPStanType($param->type->type);
 
-            return $this->typeFactory->createObjectTypeOrUnionType($types);
+            return $this->typeFactory->createMixedPassedOrUnionType($types);
         }
 
         // special case for alias

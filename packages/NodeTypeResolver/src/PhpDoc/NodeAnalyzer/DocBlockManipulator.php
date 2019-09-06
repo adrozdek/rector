@@ -49,7 +49,6 @@ use Rector\NodeTypeResolver\StaticTypeMapper;
 use Rector\Php\TypeAnalyzer;
 use Rector\PhpParser\Node\Resolver\NameResolver;
 use Rector\PhpParser\Printer\BetterStandardPrinter;
-use Rector\TypeDeclaration\ValueObject\IdentifierValueObject;
 
 /**
  * @see \Rector\NodeTypeResolver\Tests\PhpDoc\NodeAnalyzer\DocBlockManipulatorTest
@@ -287,18 +286,13 @@ final class DocBlockManipulator
         return $phpDocInfo->getTagsByName($name);
     }
 
-    /**
-     * @param string|string[]|IdentifierValueObject|IdentifierValueObject[]|Type $type
-     */
-    public function changeVarTag(Node $node, $type): void
+    public function changeVarTag(Node $node, Type $type): void
     {
         $this->removeTagFromNode($node, 'var', true);
 
-        if ($type instanceof Type) {
-            $type = implode('|', $this->staticTypeMapper->mapPHPStanTypeToStrings($type));
-        }
+        $docString = $this->staticTypeMapper->mapPHPStanTypeToDocString($type);
 
-        $this->addTypeSpecificTag($node, 'var', $type);
+        $this->addTypeSpecificTag($node, 'var', $docString);
     }
 
     public function addReturnTag(Node $node, string $type): void
@@ -587,21 +581,10 @@ final class DocBlockManipulator
     /**
      * All class-type tags are FQN by default to keep default convention through the code.
      * Some people prefer FQN, some short. FQN can be shorten with \Rector\CodingStyle\Rector\Namespace_\ImportFullyQualifiedNamesRector later, while short prolonged not
-     * @param string|string[]|IdentifierValueObject|IdentifierValueObject[] $type
+     * @param string|string[] $type
      */
-    private function addTypeSpecificTag(Node $node, string $name, $type): void
+    private function addTypeSpecificTag(Node $node, string $name, string $type): void
     {
-        if (! is_array($type)) {
-            $type = [$type];
-        }
-
-        foreach ($type as $key => $singleType) {
-            // prefix possible class name
-            $type[$key] = $this->preslashFullyQualifiedNames($singleType);
-        }
-
-        $type = implode('|', $type);
-
         // there might be no phpdoc at all
         if ($node->getDocComment() !== null) {
             $phpDocInfo = $this->createPhpDocInfoFromNode($node);
@@ -746,41 +729,6 @@ final class DocBlockManipulator
         $this->useAddingCommander->addUseImport($node, $fullyQualifiedName);
 
         return $attributeAwareNode;
-    }
-
-    /**
-     * @param string|IdentifierValueObject $type
-     */
-    private function preslashFullyQualifiedNames($type): string
-    {
-        if ($type instanceof IdentifierValueObject) {
-            if ($type->isAlias()) {
-                return $type->getName();
-            }
-
-            $type = $type->getName();
-        }
-
-        $joinChar = '|'; // default
-        if (Strings::contains($type, '|')) { // intersection
-            $joinChar = '|';
-            $types = explode($joinChar, $type);
-        } elseif (Strings::contains($type, '&')) { // union
-            $joinChar = '&';
-            $types = explode($joinChar, $type);
-        } else {
-            $types = [$type];
-        }
-
-        foreach ($types as $key => $singleType) {
-            if ($this->typeAnalyzer->isPhpReservedType($singleType)) {
-                continue;
-            }
-
-            $types[$key] = '\\' . ltrim($singleType, '\\');
-        }
-
-        return implode($joinChar, $types);
     }
 
     private function isCurrentNamespaceSameShortClassAlreadyUsed(

@@ -302,9 +302,7 @@ final class StaticTypeMapper
             $stringTypes = [];
 
             foreach ($phpStanType->getTypes() as $unionedType) {
-                if ($unionedType instanceof ObjectType) {
-                    $stringTypes[] = $this->mapPHPStanTypeToDocString($unionedType);
-                }
+                $stringTypes[] = $this->mapPHPStanTypeToDocString($unionedType);
             }
 
             return implode('|', $stringTypes);
@@ -333,7 +331,24 @@ final class StaticTypeMapper
             return 'string';
         }
 
-        throw new NotImplementedException();
+        if ($phpStanType instanceof IntegerType) {
+            return 'int';
+        }
+
+        if ($phpStanType instanceof NullType) {
+            return 'null';
+        }
+
+        if ($phpStanType instanceof ArrayType) {
+            $itemTypeDocString = $this->mapPHPStanTypeToDocString($phpStanType->getItemType());
+            return $itemTypeDocString . '[]';
+        }
+
+        if ($phpStanType instanceof MixedType) {
+            return 'mixed';
+        }
+
+        throw new NotImplementedException(__METHOD__ . ' for ' . get_class($phpStanType));
     }
 
     /**
@@ -348,6 +363,10 @@ final class StaticTypeMapper
 
             if ($node->name === 'string') {
                 return new StringType();
+            }
+
+            if ($node->name === 'array') {
+                return new ArrayType(new MixedType(), new MixedType());
             }
         }
 
