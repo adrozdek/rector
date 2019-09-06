@@ -69,11 +69,6 @@ final class NodeTypeResolver
     private $betterStandardPrinter;
 
     /**
-     * @var StaticTypeMapper
-     */
-    private $staticTypeMapper;
-
-    /**
      * @var CallableNodeTraverser
      */
     private $callableNodeTraverser;
@@ -97,7 +92,6 @@ final class NodeTypeResolver
      * @param PerNodeTypeResolverInterface[] $perNodeTypeResolvers
      */
     public function __construct(
-        StaticTypeMapper $staticTypeMapper,
         BetterStandardPrinter $betterStandardPrinter,
         NameResolver $nameResolver,
         CallableNodeTraverser $callableNodeTraverser,
@@ -106,13 +100,13 @@ final class NodeTypeResolver
         TypeFactory $typeFactory,
         array $perNodeTypeResolvers
     ) {
-        $this->staticTypeMapper = $staticTypeMapper;
         $this->betterStandardPrinter = $betterStandardPrinter;
         $this->nameResolver = $nameResolver;
 
         foreach ($perNodeTypeResolvers as $perNodeTypeResolver) {
             $this->addPerNodeTypeResolver($perNodeTypeResolver);
         }
+
         $this->callableNodeTraverser = $callableNodeTraverser;
         $this->classReflectionTypesResolver = $classReflectionTypesResolver;
         $this->broker = $broker;
@@ -298,38 +292,23 @@ final class NodeTypeResolver
         return $nodeScope->getType($node);
     }
 
-    /**
-     * @return string[]
-     */
-    public function resolveSingleTypeToStrings(Node $node): array
+    public function resolveNodeToPHPStanType(Expr $expr): Type
     {
-        if ($this->isArrayType($node)) {
-            $arrayType = $this->getStaticType($node);
+        if ($this->isArrayType($expr)) {
+            $arrayType = $this->getStaticType($expr);
+
             if ($arrayType instanceof ArrayType) {
-                $itemTypes = $this->staticTypeMapper->mapPHPStanTypeToStrings($arrayType->getItemType());
-
-                foreach ($itemTypes as $key => $itemType) {
-                    $itemTypes[$key] = $itemType . '[]';
-                }
-
-                if (count($itemTypes) > 0) {
-                    return [implode('|', $itemTypes)];
-                }
+                return $arrayType;
             }
 
-            return ['array'];
+            return new ArrayType(new MixedType(), new MixedType());
         }
 
-        if ($this->isStringOrUnionStringOnlyType($node)) {
-            return ['string'];
+        if ($this->isStringOrUnionStringOnlyType($expr)) {
+            return new StringType();
         }
 
-        $nodeStaticType = $this->getStaticType($node);
-        if ($nodeStaticType instanceof MixedType) {
-            return ['mixed'];
-        }
-
-        return $this->staticTypeMapper->mapPHPStanTypeToStrings($nodeStaticType);
+        return $this->getStaticType($expr);
     }
 
     public function isNullableObjectType(Node $node): bool

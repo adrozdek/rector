@@ -8,6 +8,7 @@ use PhpParser\Node\Expr\Yield_;
 use PhpParser\Node\FunctionLike;
 use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Function_;
+use PHPStan\Type\Type;
 use Rector\Php\PhpVersionProvider;
 use Rector\PhpParser\Node\BetterNodeFinder;
 use Rector\TypeDeclaration\Contract\TypeInferer\ReturnTypeInfererInterface;
@@ -35,7 +36,7 @@ final class YieldNodesReturnTypeInferer extends AbstractTypeInferer implements R
      * @param ClassMethod|Function_|Closure $functionLike
      * @return string[]
      */
-    public function inferFunctionLike(FunctionLike $functionLike): array
+    public function inferFunctionLike(FunctionLike $functionLike): Type
     {
         /** @var Yield_[] $yieldNodes */
         $yieldNodes = $this->betterNodeFinder->findInstanceOf((array) $functionLike->stmts, Yield_::class);
@@ -47,7 +48,7 @@ final class YieldNodesReturnTypeInferer extends AbstractTypeInferer implements R
                     continue;
                 }
 
-                $resolvedTypes = $this->nodeTypeResolver->resolveSingleTypeToStrings($yieldNode->value);
+                $resolvedTypes = $this->nodeTypeResolver->resolveNodeToPHPStanType($yieldNode->value);
                 foreach ($resolvedTypes as $resolvedType) {
                     $types[] = $resolvedType . '[]';
                 }

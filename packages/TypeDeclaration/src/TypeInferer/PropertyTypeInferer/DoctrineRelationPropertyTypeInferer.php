@@ -3,10 +3,16 @@
 namespace Rector\TypeDeclaration\TypeInferer\PropertyTypeInferer;
 
 use PhpParser\Node\Stmt\Property;
+use PHPStan\Type\ArrayType;
+use PHPStan\Type\MixedType;
+use PHPStan\Type\NullType;
+use PHPStan\Type\ObjectType;
+use PHPStan\Type\Type;
 use Rector\DoctrinePhpDocParser\Ast\PhpDoc\Property_\JoinColumnTagValueNode;
 use Rector\DoctrinePhpDocParser\Contract\Ast\PhpDoc\ToManyTagNodeInterface;
 use Rector\DoctrinePhpDocParser\Contract\Ast\PhpDoc\ToOneTagNodeInterface;
 use Rector\NodeTypeResolver\PhpDoc\NodeAnalyzer\DocBlockManipulator;
+use Rector\NodeTypeResolver\PHPStan\Type\TypeFactory;
 use Rector\TypeDeclaration\Contract\TypeInferer\PropertyTypeInfererInterface;
 
 final class DoctrineRelationPropertyTypeInferer implements PropertyTypeInfererInterface
@@ -21,24 +27,27 @@ final class DoctrineRelationPropertyTypeInferer implements PropertyTypeInfererIn
      */
     private $docBlockManipulator;
 
-    public function __construct(DocBlockManipulator $docBlockManipulator)
+    /**
+     * @var TypeFactory
+     */
+    private $typeFactory;
+
+    public function __construct(DocBlockManipulator $docBlockManipulator, TypeFactory $typeFactory)
     {
         $this->docBlockManipulator = $docBlockManipulator;
+        $this->typeFactory = $typeFactory;
     }
 
-    /**
-     * @return string[]
-     */
-    public function inferProperty(Property $property): array
+    public function inferProperty(Property $property): Type
     {
         if ($property->getDocComment() === null) {
-            return [];
+            return new MixedType();
         }
 
         $phpDocInfo = $this->docBlockManipulator->createPhpDocInfoFromNode($property);
         $relationTagValueNode = $phpDocInfo->getDoctrineRelationTagValueNode();
         if ($relationTagValueNode === null) {
-            return [];
+            return new MixedType();
         }
 
         if ($relationTagValueNode instanceof ToManyTagNodeInterface) {
@@ -48,7 +57,7 @@ final class DoctrineRelationPropertyTypeInferer implements PropertyTypeInfererIn
             return $this->processToOneRelation($relationTagValueNode, $joinColumnTagValueNode);
         }
 
-        return [];
+        return new MixedType();
     }
 
     public function getPriority(): int
@@ -56,42 +65,36 @@ final class DoctrineRelationPropertyTypeInferer implements PropertyTypeInfererIn
         return 900;
     }
 
-    /**
-     * @return string[]
-     */
-    private function processToManyRelation(ToManyTagNodeInterface $toManyTagNode): array
+    private function processToManyRelation(ToManyTagNodeInterface $toManyTagNode): Type
     {
         $types = [];
 
         $targetEntity = $toManyTagNode->getTargetEntity();
         if ($targetEntity) {
-            $types[] = $targetEntity . '[]';
+            $types[] = new ArrayType(new MixedType(), new ObjectType($targetEntity));
         }
 
-        $types[] = self::COLLECTION_TYPE;
+        $types[] = new ObjectType(self::COLLECTION_TYPE);
 
-        return $types;
+        return $this->typeFactory->createObjectTypeOrUnionType($types);
     }
 
-    /**
-     * @return string[]
-     */
     private function processToOneRelation(
         ToOneTagNodeInterface $toOneTagNode,
         ?JoinColumnTagValueNode $joinColumnTagValueNode
-    ): array {
+    ): Type {
         $types = [];
 
         $targetEntity = $toOneTagNode->getFqnTargetEntity();
         if ($targetEntity) {
-            $types[] = $targetEntity;
+            $types[] = new ObjectType($targetEntity);
         }
 
         // nullable by default
         if ($joinColumnTagValueNode === null || $joinColumnTagValueNode->isNullable()) {
-            $types[] = 'null';
+            $types[] = new NullType();
         }
 
-        return $types;
+        return $this->typeFactory->createObjectTypeOrUnionType($types);
     }
 }

@@ -2,6 +2,7 @@
 
 namespace Rector\NodeTypeResolver\PHPStan\Type;
 
+use PHPStan\Type\MixedType;
 use PHPStan\Type\ObjectType;
 use PHPStan\Type\Type;
 use PHPStan\Type\UnionType;
@@ -10,6 +11,22 @@ use Rector\PHPStan\TypeFactoryStaticHelper;
 
 final class TypeFactory
 {
+    /**
+     * @param Type[] $types
+     */
+    public function createMixedPassedOrUnionType(array $types): Type
+    {
+        if (count($types) === 0) {
+            return new MixedType();
+        }
+
+        if (count($types) === 1) {
+            return $types[0];
+        }
+
+        return new UnionType($types);
+    }
+
     /**
      * @param string[] $allTypes
      * @return ObjectType|UnionType

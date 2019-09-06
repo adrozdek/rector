@@ -39,6 +39,7 @@ use Rector\Exception\ShouldNotHappenException;
 use Rector\NodeTypeResolver\Node\AttributeKey;
 use Rector\Php\PhpVersionProvider;
 use Rector\PhpParser\Node\Manipulator\ConstFetchManipulator;
+use Rector\PHPStan\Type\AliasedObjectType;
 use Rector\PHPStan\Type\FullyQualifiedObjectType;
 
 /**
@@ -70,6 +71,7 @@ final class StaticTypeMapper
     }
 
     /**
+     * @deprecated Use direct static type or @see $this::mapPHPStanTypeToDocString() method
      * @todo this should return only single string
      * @return string[]
      */
@@ -308,6 +310,11 @@ final class StaticTypeMapper
             return implode('|', $stringTypes);
         }
 
+        if ($phpStanType instanceof AliasedObjectType) {
+            // no preslash for alias
+            return $phpStanType->getClassName();
+        }
+
         if ($phpStanType instanceof FullyQualifiedObjectType) {
             // always prefixed with \\
             return '\\' . $phpStanType->getClassName();
@@ -327,6 +334,24 @@ final class StaticTypeMapper
         }
 
         throw new NotImplementedException();
+    }
+
+    /**
+     * @param Name|Identifier $node
+     */
+    public function mapPhpParserNodePHPStanType(Node $node): Type
+    {
+        if ($node instanceof Identifier) {
+            if ($node->name === 'int') {
+                return new IntegerType();
+            }
+
+            if ($node->name === 'string') {
+                return new StringType();
+            }
+        }
+
+        throw new NotImplementedException(__METHOD__);
     }
 
     /**

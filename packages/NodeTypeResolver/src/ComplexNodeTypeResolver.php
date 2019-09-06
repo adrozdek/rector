@@ -92,7 +92,7 @@ final class ComplexNodeTypeResolver
         foreach ($propertyAssignNodes as $propertyAssignNode) {
             $types = array_merge(
                 $types,
-                $this->nodeTypeResolver->resolveSingleTypeToStrings($propertyAssignNode->expr)
+                $this->nodeTypeResolver->resolveNodeToPHPStanType($propertyAssignNode->expr)
             );
         }
 

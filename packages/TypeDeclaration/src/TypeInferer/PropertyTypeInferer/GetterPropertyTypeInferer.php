@@ -41,10 +41,7 @@ final class GetterPropertyTypeInferer extends AbstractTypeInferer implements Pro
         $this->typeDeclarationToStringConverter = $typeDeclarationToStringConverter;
     }
 
-    /**
-     * @return string[]
-     */
-    public function inferProperty(Property $property): array
+    public function inferProperty(Property $property): \PHPStan\Type\Type
     {
         /** @var Class_ $class */
         $class = $property->getAttribute(AttributeKey::CLASS_NODE);
@@ -97,9 +94,9 @@ final class GetterPropertyTypeInferer extends AbstractTypeInferer implements Pro
     /**
      * @return string[]
      */
-    private function inferClassMethodReturnTypes(ClassMethod $classMethod): array
+    private function inferClassMethodReturnTypes(ClassMethod $classMethod): \PHPStan\Type\Type
     {
-        $returnTypeDeclarationTypes = $this->typeDeclarationToStringConverter->resolveFunctionLikeReturnTypeToString(
+        $returnTypeDeclarationTypes = $this->typeDeclarationToStringConverter->resolveFunctionLikeReturnTypeToPHPStanType(
             $classMethod
         );
         if ($returnTypeDeclarationTypes) {

@@ -8,6 +8,8 @@ use PhpParser\Node\Stmt\Class_;
 use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Return_;
 use PhpParser\NodeTraverser;
+use PHPStan\Type\MixedType;
+use PHPStan\Type\Type;
 use Rector\NodeTypeResolver\Node\AttributeKey;
 use Rector\NodeTypeResolver\Php\ReturnTypeInfo;
 use Rector\NodeTypeResolver\PhpDoc\NodeAnalyzer\DocBlockManipulator;
@@ -35,15 +37,12 @@ final class GetterNodeParamTypeInferer extends AbstractTypeInferer implements Pa
         $this->docBlockManipulator = $docBlockManipulator;
     }
 
-    /**
-     * @return string[]
-     */
-    public function inferParam(Param $param): array
+    public function inferParam(Param $param): Type
     {
         /** @var Class_|null $classNode */
         $classNode = $param->getAttribute(AttributeKey::CLASS_NODE);
         if ($classNode === null) {
-            return [];
+            return new MixedType();
         }
 
         /** @var ClassMethod $classMethod */
@@ -54,7 +53,7 @@ final class GetterNodeParamTypeInferer extends AbstractTypeInferer implements Pa
 
         $propertyNames = $this->propertyFetchManipulator->getPropertyNamesOfAssignOfVariable($classMethod, $paramName);
         if ($propertyNames === []) {
-            return [];
+            return new MixedType();
         }
 
         $returnTypeInfo = null;
@@ -92,7 +91,7 @@ final class GetterNodeParamTypeInferer extends AbstractTypeInferer implements Pa
 
         /** @var ReturnTypeInfo|null $returnTypeInfo */
         if ($returnTypeInfo === null) {
-            return [];
+            return new MixedType();
         }
 
         $docTypes = $returnTypeInfo->getDocTypes();
@@ -102,6 +101,6 @@ final class GetterNodeParamTypeInferer extends AbstractTypeInferer implements Pa
             $docTypes[$key] = rtrim($docType, '[]');
         }
 
-        return $docTypes;
+        return $this->typeFactory->createObjectTypeOrUnionType($docTypes);
     }
 }

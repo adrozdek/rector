@@ -4,27 +4,20 @@ namespace Rector\TypeDeclaration\TypeInferer\PropertyTypeInferer;
 
 use PhpParser\Node\Stmt\Property;
 use PHPStan\Type\MixedType;
+use PHPStan\Type\Type;
 use Rector\TypeDeclaration\Contract\TypeInferer\PropertyTypeInfererInterface;
 use Rector\TypeDeclaration\TypeInferer\AbstractTypeInferer;
 
 final class DefaultValuePropertyTypeInferer extends AbstractTypeInferer implements PropertyTypeInfererInterface
 {
-    /**
-     * @return string[]
-     */
-    public function inferProperty(Property $property): array
+    public function inferProperty(Property $property): Type
     {
         $propertyProperty = $property->props[0];
         if ($propertyProperty->default === null) {
-            return [];
+            return new MixedType();
         }
 
-        $nodeStaticType = $this->nodeTypeResolver->getStaticType($propertyProperty->default);
-        if ($nodeStaticType instanceof MixedType) {
-            return [];
-        }
-
-        return $this->staticTypeMapper->mapPHPStanTypeToStrings($nodeStaticType);
+        return $this->nodeTypeResolver->getStaticType($propertyProperty->default);
     }
 
     public function getPriority(): int

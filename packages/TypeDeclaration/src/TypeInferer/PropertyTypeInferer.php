@@ -3,8 +3,9 @@
 namespace Rector\TypeDeclaration\TypeInferer;
 
 use PhpParser\Node\Stmt\Property;
+use PHPStan\Type\MixedType;
+use PHPStan\Type\Type;
 use Rector\TypeDeclaration\Contract\TypeInferer\PropertyTypeInfererInterface;
-use Rector\TypeDeclaration\ValueObject\IdentifierValueObject;
 
 final class PropertyTypeInferer extends AbstractPriorityAwareTypeInferer
 {
@@ -21,18 +22,15 @@ final class PropertyTypeInferer extends AbstractPriorityAwareTypeInferer
         $this->propertyTypeInferers = $this->sortTypeInferersByPriority($propertyTypeInferers);
     }
 
-    /**
-     * @return string[]|IdentifierValueObject[]
-     */
-    public function inferProperty(Property $property): array
+    public function inferProperty(Property $property): Type
     {
         foreach ($this->propertyTypeInferers as $propertyTypeInferer) {
-            $types = $propertyTypeInferer->inferProperty($property);
-            if ($types !== [] && $types !== ['mixed']) {
-                return $types;
+            $type = $propertyTypeInferer->inferProperty($property);
+            if (! $type instanceof MixedType) {
+                return $type;
             }
         }
 
-        return [];
+        return new MixedType();
     }
 }
